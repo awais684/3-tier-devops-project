@@ -30,6 +30,7 @@ docker compose up
 ```
 
 ## Application Screenshots
+![](./images/0-3-tier-devops-project.jpg)
 ![](./images/home.jpg)
 ![](./images/campgrounds.jpg)
 ![](./images/register.jpg)
