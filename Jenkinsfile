@@ -55,7 +55,7 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh "trivy image --format table -o fs-report.html adijaiswal/camp:latest"
+                sh "trivy image --format table -o fs-report.html awais684/camp:latest"
             }
         }
 
