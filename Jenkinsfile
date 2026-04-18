@@ -80,4 +80,31 @@ pipeline {
         }
 
     }
+
+    post {
+
+        success {
+            mail(
+                to: 'prodteam@yourcompany.com',
+                subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
+                body: """\
+Hi Prod Team,
+...
+				""".stripIndent()
+            )
+        }
+
+        failure {
+            mail(
+                to: 'devteam@yourcompany.com',
+                subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
+                body: """\
+Hi Dev Team,
+...
+				""".stripIndent()
+            )
+        }
+
+    }  
+
 }
