@@ -73,7 +73,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker run -d -p 3000:3000 adijaiswal/camp:latest"
+                        sh "docker run -d -p 3000:3000 awais684/camp:latest"
                     }
                 }
             }
