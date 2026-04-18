@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME   = "awais684/camp:latest"
+        CLUSTER_NAME = "your-eks-cluster-name"
+        AWS_REGION   = "us-east-1"
+        K8S_FILE     = "k8s/deployment.yaml"
+    }
+
+    stages {
+
+        stage('Git Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'git-cred',
+                    url: 'https://github.com/awais684/3-tier-devops-project.git'
+            }
+        }
+
+        stage('Connect to EKS') {
+            steps {
+                sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}"
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh "kubectl apply -f ${K8S_FILE}"
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh "kubectl rollout status deployment/camp-deployment --timeout=3m"
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            mail(
+                to: 'prodteam@yourcompany.com',
+                subject: "✅ Prod Deployment Successful — Build #${env.BUILD_NUMBER}",
+                body: """\
+Hi Team,
+
+Production deployment completed successfully.
+
+Deployment Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : main
+Build URL    : ${env.BUILD_URL}
+Image        : ${env.IMAGE_NAME}
+Cluster      : ${env.CLUSTER_NAME}
+Region       : ${env.AWS_REGION}
+
+✅ EKS deployment is live.
+Please verify the application is running correctly.
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+        failure {
+            mail(
+                to: 'prodteam@yourcompany.com',
+                subject: "❌ Prod Deployment FAILED — Build #${env.BUILD_NUMBER}",
+                body: """\
+Hi Team,
+
+Production deployment FAILED. Application may be affected.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+Immediate Actions:
+──────────────────────────────
+1. Check Build URL above for error details
+2. Run this to rollback to previous version:
+   kubectl rollout undo deployment/camp-deployment
+3. Investigate and fix before re-deploying
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+    }
+
+}
