@@ -89,7 +89,7 @@ pipeline {
                 subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
                 body: """\
 Hi Prod Team,
-...
+Good news! The Dev pipeline has completed successfully and the image is ready to deploy.
 				""".stripIndent()
             )
         }
@@ -100,7 +100,7 @@ Hi Prod Team,
                 subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
                 body: """\
 Hi Dev Team,
-...
+The Dev pipeline has FAILED. Please investigate and fix before prod deployment
 				""".stripIndent()
             )
         }
