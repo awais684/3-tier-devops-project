@@ -63,7 +63,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker push adijaiswal/camp:latest"
+                        sh "docker push awais684/camp:latest"
                     }
                 }
             }
