@@ -13,7 +13,7 @@ pipeline {
 
         stage('Git Checkout') {
             steps {
-                git credentialsId: 'git-cred', url: 'https://github.com/jaiswaladi246/DevOps-Shack-3Tier.git'
+                git credentialsId: 'git-cred', url: 'https://github.com/awais684/3-tier-devops-project.git'
             }
         }
 
