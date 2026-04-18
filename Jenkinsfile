@@ -47,7 +47,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker build -t adi/camp:latest ."
+                        sh "docker build -t awais684/camp:latest ."
                     }
                 }
             }
