@@ -90,6 +90,11 @@ pipeline {
                 body: """\
 Hi Prod Team,
 Good news! The Dev pipeline has completed successfully and the image is ready to deploy.
+
+Docker Image:
+──────────────────────────────
+awais684/camp:latest is pushed to Docker Hub and ready for production.
+
 				""".stripIndent()
             )
         }
@@ -101,6 +106,14 @@ Good news! The Dev pipeline has completed successfully and the image is ready to
                 body: """\
 Hi Dev Team,
 The Dev pipeline has FAILED. Please investigate and fix before prod deployment
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
+Build URL    : ${env.BUILD_URL}
+
 				""".stripIndent()
             )
         }
