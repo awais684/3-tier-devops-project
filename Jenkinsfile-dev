@@ -81,7 +81,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker run -d -p 3000:3000 awais684/camp:latest"
+                        sh "docker run -d -p 3000:3000 --env-file /opt/app.env awais684/camp:latest"   // or u can store all values in .env file as secret text credentials or store complete file as secret file in jenkin and call as env variable in pipeline
                     }
                 }
             }
@@ -124,7 +124,5 @@ Build URL    : ${env.BUILD_URL}
 				""".stripIndent()
             )
         }
-
     }  
-
 }
