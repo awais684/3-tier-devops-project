@@ -32,7 +32,7 @@ pipeline {
         stage('Trivy FS Scan') {
             steps {
                 // sh "trivy fs --format table ."    read it directly in Jenkins console (no file needed)
-                 sh "trivy image --format table -o trivy-report.html awais684/camp:latest"
+                 sh "trivy fs --format table -o trivy-report.html awais684/camp:latest"
                  archiveArtifacts artifacts: 'trivy-report.html', fingerprint: true 
             }
         }
