@@ -31,6 +31,7 @@ docker compose up
 
 ## Application Screenshots
 ![](./images/0-3-tier-devops-project.png)
+![](./images/architecture.png)
 ![](./images/home.jpg)
 ![](./images/campgrounds.jpg)
 ![](./images/register.jpg)
