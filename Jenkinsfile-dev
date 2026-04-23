@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'    // tool
     }
 
     stages {
@@ -39,7 +39,7 @@ pipeline {
 
         stage('SonarQube') {
             steps {
-                withSonarQubeEnv('sonar') {
+                withSonarQubeEnv('sonar') {    // system
                     sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Campground -Dsonar.projectName=Campground"   // in the next step, you can add a stage for Sonar quality gate check for proper setup
                 }
             }
