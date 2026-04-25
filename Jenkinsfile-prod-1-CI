@@ -1,0 +1,147 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'node22'
+    }
+
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+
+    stages {
+
+        stage('Git Checkout') {
+            steps {
+                git branch: 'developer',
+                    credentialsId: 'github-cred',
+                    url: 'https://github.com/awais684/3-tier-devops-project.git'
+            }
+        }
+
+        stage('Install Package Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh "npm test"
+            }
+        }
+
+        stage('Trivy FS Scan') {
+            steps {
+                sh "trivy fs --format table -o trivy-report.html ."
+                archiveArtifacts artifacts: 'trivy-report.html', fingerprint: true
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Campground -Dsonar.projectName=Campground"
+                }
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Docker Build & Tag') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker build -t awais684/camp:latest ."
+                    }
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh "trivy image --format table -o trivy-image-report.html awais684/camp:latest"
+                archiveArtifacts artifacts: 'trivy-image-report.html', fingerprint: true
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            mail(
+                to: 'awaiszahid684@gmail.com',
+                subject: "✅ PR Pipeline Passed — Ready for Review #${env.BUILD_NUMBER}",
+                body: """\
+Hi Manager,
+
+A Pull Request has passed all checks and is ready for your review.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
+Build URL    : ${env.BUILD_URL}
+
+Checks Completed:
+──────────────────────────────
+✅ Git Checkout
+✅ Install Dependencies
+✅ Unit Tests
+✅ Trivy FS Scan
+✅ SonarQube Code Quality
+✅ Docker Build & Tag
+✅ Trivy Image Scan
+
+Action Required:
+──────────────────────────────
+Please review and merge the PR.
+Once merged, deploy pipeline will
+trigger automatically.
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+        failure {
+            mail(
+                to: 'awaiszahid684@gmail.com',
+                subject: "❌ PR Pipeline FAILED — Build #${env.BUILD_NUMBER}",
+                body: """\
+Hi Dev Team,
+
+PR pipeline FAILED. Please fix before requesting review.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
+Build URL    : ${env.BUILD_URL}
+
+What To Do:
+──────────────────────────────
+1. Click Build URL to see which stage failed
+2. Fix the issue on developer branch
+3. Push the fix — pipeline will re-trigger
+4. Do NOT ask manager to review until pipeline passes
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+    }
+
+}
