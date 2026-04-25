@@ -93,29 +93,14 @@ pipeline {
 
     post {
 
-        success {
-            mail(
-                to: 'prodteam@yourcompany.com',
-                subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
-                body: """\
+    success {
+        mail(
+            to: 'awaiszahid684@gmail.com',
+            subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
+            body: """\
 Hi Prod Team,
+
 Good news! The Dev pipeline has completed successfully and the image is ready to deploy.
-
-Docker Image:
-──────────────────────────────
-awais684/camp:latest is pushed to Docker Hub and ready for production.
-
-				""".stripIndent()
-            )
-        }
-
-        failure {
-            mail(
-                to: 'devteam@yourcompany.com',
-                subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
-                body: """\
-Hi Dev Team,
-The Dev pipeline has FAILED. Please investigate and fix before prod deployment
 
 Build Details:
 ──────────────────────────────
@@ -124,8 +109,42 @@ Build Number : #${env.BUILD_NUMBER}
 Branch       : ${env.GIT_BRANCH}
 Build URL    : ${env.BUILD_URL}
 
-				""".stripIndent()
-            )
-        }
-    }  
+Docker Image:
+──────────────────────────────
+awais684/camp:latest is pushed to Docker Hub and ready for production.
+
+Regards,
+Jenkins Automation
+            """.stripIndent()
+        )
+    }
+
+    failure {
+        mail(
+            to: 'awaiszahid684@gmail.com',
+            subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
+            body: """\
+Hi Dev Team,
+
+The Dev pipeline has FAILED. Please investigate and fix before prod deployment.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
+Build URL    : ${env.BUILD_URL}
+
+What To Do:
+──────────────────────────────
+1. Click Build URL above to see which stage failed
+2. Fix the issue on dev branch
+3. Push the fix and pipeline will re-trigger
+
+Regards,
+Jenkins Automation
+            """.stripIndent()
+        )
+    }
+
 }
