@@ -95,7 +95,7 @@ pipeline {
 
         success {
             mail(
-                to: 'prodteam@yourcompany.com',
+                to: 'awaiszahid684@gmail.com',
                 subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
                 body: """\
 Hi Prod Team,
@@ -111,7 +111,7 @@ awais684/camp:latest is pushed to Docker Hub and ready for production.
 
         failure {
             mail(
-                to: 'devteam@yourcompany.com',
+                to: 'awaiszahid684@gmail.com',
                 subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
                 body: """\
 Hi Dev Team,
