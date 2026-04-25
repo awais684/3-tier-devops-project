@@ -172,12 +172,6 @@ subjects:
 ### Generate token using service account in the namespace
 
 ```yaml
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/service-account-token
-metadata:
-  name: mysecretname
-  annotations:
-    kubernetes.io/service-account.name: jenkins
+kubectl create token jenkins -n webapps
 ```
 
