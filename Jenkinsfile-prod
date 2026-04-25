@@ -82,12 +82,9 @@ pipeline {
 
         stage('Deploy to EKS & Verify') {
     steps {
-        withCredentials([
-            string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-            string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
-        ]) {
-            sh "aws eks update-kubeconfig --name cluster-1 --region us-east-1"
-            sh "kubectl apply -f Manifests/dss.yml --validate=false"
+        withKubeCredentials(kubectlCredentials: [[caCertificate: '', clusterName: 'cluster-1', contextName: '', credentialsId: 'k8s-token', namespace: 'webapps', serverUrl: 'https://D91046FD0D6A5D2149EEBDAB6F8505FC.gr7.us-east-1.eks.amazonaws.com']]) {
+            // sh "aws eks update-kubeconfig --name cluster-1 --region us-east-1"
+            sh "kubectl apply -f dss.yml"
             sh "kubectl get deployment -n webapps"
             sh "kubectl get pods -n webapps"
         }
