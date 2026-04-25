@@ -6,14 +6,14 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'    // tool
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
 
         stage('Git Checkout') {
             steps {
-                git credentialsId: 'git-cred', url: 'https://github.com/awais684/3-tier-devops-project.git'
+                git branch: 'developer', credentialsId: 'github-cred', url: 'https://github.com/awais684/3-tier-devops-project.git'
             }
         }
 
@@ -31,24 +31,23 @@ pipeline {
 
         stage('Trivy FS Scan') {
             steps {
-                // sh "trivy fs --format table ."    read it directly in Jenkins console (no file needed)
-                 sh "trivy fs --format table -o trivy-report.html ."
-                 archiveArtifacts artifacts: 'trivy-report.html', fingerprint: true 
+                sh "trivy fs --format table -o trivy-report.html ."
+                archiveArtifacts artifacts: 'trivy-report.html', fingerprint: true
             }
         }
 
         stage('SonarQube') {
             steps {
-                withSonarQubeEnv('sonar') {    // system
-                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Campground -Dsonar.projectName=Campground"   // in the next step, you can add a stage for Sonar quality gate check for proper setup
+                withSonarQubeEnv('sonar') {
+                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Campground -Dsonar.projectName=Campground"
                 }
             }
         }
-        
+
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
@@ -57,7 +56,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker build -t awais684/camp:latest ."                        // or you can run docker build -t awais684/camp:${BUILD_NUMBER} (it will keep build versions)
+                        sh "docker build -t awais684/camp:latest ."
                     }
                 }
             }
@@ -69,7 +68,7 @@ pipeline {
                 archiveArtifacts artifacts: 'trivy-image-report.html', fingerprint: true
             }
         }
-        
+
         stage('Docker Push Image') {
             steps {
                 script {
@@ -84,7 +83,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker run -d -p 3000:3000 --env-file /opt/app.env awais684/camp:latest"   // or u can store all values in .env file as secret text credentials or store complete file as secret file in jenkin and call as env variable in pipeline
+                        sh "docker run -d -p 3000:3000 --env-file /opt/app.env awais684/camp:latest"
                     }
                 }
             }
@@ -99,13 +98,23 @@ pipeline {
                 subject: "✅ Dev Pipeline Passed — Ready for Prod Deploy #${env.BUILD_NUMBER}",
                 body: """\
 Hi Prod Team,
+
 Good news! The Dev pipeline has completed successfully and the image is ready to deploy.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
+Build URL    : ${env.BUILD_URL}
 
 Docker Image:
 ──────────────────────────────
 awais684/camp:latest is pushed to Docker Hub and ready for production.
 
-				""".stripIndent()
+Regards,
+Jenkins Automation
+                """.stripIndent()
             )
         }
 
@@ -115,7 +124,8 @@ awais684/camp:latest is pushed to Docker Hub and ready for production.
                 subject: "❌ Dev Pipeline FAILED — Build #${env.BUILD_NUMBER}",
                 body: """\
 Hi Dev Team,
-The Dev pipeline has FAILED. Please investigate and fix before prod deployment
+
+The Dev pipeline has FAILED. Please investigate and fix before prod deployment.
 
 Build Details:
 ──────────────────────────────
@@ -124,8 +134,18 @@ Build Number : #${env.BUILD_NUMBER}
 Branch       : ${env.GIT_BRANCH}
 Build URL    : ${env.BUILD_URL}
 
-				""".stripIndent()
+What To Do:
+──────────────────────────────
+1. Click Build URL above to see which stage failed
+2. Fix the issue on dev branch
+3. Push the fix and pipeline will re-trigger
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
             )
         }
-    }  
+
+    }
+
 }
