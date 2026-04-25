@@ -1,0 +1,108 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'node22'
+    }
+
+    stages {
+
+        stage('Git Checkout') {
+            steps {
+                git branch: 'master',
+                    credentialsId: 'github-cred',
+                    url: 'https://github.com/awais684/3-tier-devops-project.git'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker push awais684/camp:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Deploy To Dev') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker run -d -p 3000:3000 --env-file /opt/app.env awais684/camp:latest"
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            mail(
+                to: 'awaiszahid684@gmail.com',
+                subject: "✅ Deploy Pipeline Passed — App is Live #${env.BUILD_NUMBER}",
+                body: """\
+Hi Team,
+
+Code has been deployed successfully after PR merge.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Branch       : master
+Build URL    : ${env.BUILD_URL}
+
+Stages Completed:
+──────────────────────────────
+✅ Docker Push
+✅ Docker Deploy To Dev
+
+Application is now live on port 3000.
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+        failure {
+            mail(
+                to: 'awaiszahid684@gmail.com',
+                subject: "❌ Deploy Pipeline FAILED — Build #${env.BUILD_NUMBER}",
+                body: """\
+Hi Team,
+
+Deploy pipeline FAILED after PR merge.
+
+Build Details:
+──────────────────────────────
+Job Name     : ${env.JOB_NAME}
+Build Number : #${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+What To Do:
+──────────────────────────────
+1. Click Build URL to see which stage failed
+2. Fix the issue immediately
+3. Re-trigger deploy pipeline manually
+
+Regards,
+Jenkins Automation
+                """.stripIndent()
+            )
+        }
+
+    }
+
+}
