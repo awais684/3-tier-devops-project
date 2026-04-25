@@ -1,101 +1,142 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME   = "awais684/camp:latest"
-        CLUSTER_NAME = "your-eks-cluster-name"
-        AWS_REGION   = "us-east-1"
-        K8S_FILE     = "k8s/deployment.yaml"
+    tools {
+        nodejs 'node22'
     }
-
+    
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'   // tool
+    }
+    
     stages {
-
+        
         stage('Git Checkout') {
             steps {
-                git branch: 'main',
-                    credentialsId: 'git-cred',
-                    url: 'https://github.com/awais684/3-tier-devops-project.git'
+                git credentialsId: 'github-cred', url: 'https://github.com/awais684/3-tier-devops-project.git'
             }
         }
-
-        stage('Connect to EKS') {
+        
+        stage('Install Package Dependencies') {
             steps {
-                sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}"
+                sh "npm install"
             }
         }
-
-        stage('Deploy to EKS') {
+        
+        stage('Unit Tests') {
             steps {
-                sh "kubectl apply -f ${K8S_FILE}"
+                sh "npm test"
             }
         }
-
-        stage('Verify Deployment') {
+        
+        stage('Trivy FS Scan') {
             steps {
-                sh "kubectl rollout status deployment/camp-deployment --timeout=3m"
+                // sh "trivy fs --format table ."    read it directly in Jenkins console (no file needed)
+                 sh "trivy fs --format table -o trivy-report.html ."
+                 archiveArtifacts artifacts: 'trivy-report.html', fingerprint: true
+            }
+        }
+        
+        stage('SonarQube') {
+            steps {
+                withSonarQubeEnv('sonar') {    // system
+                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Campground -Dsonar.projectName=Campground"   // in the next step, you can add a stage for Sonar quality gate check for proper setup
+                }
+            }
+        }
+        
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+        
+        stage('Docker Build & Tag') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker build -t awais684/camp:latest ."                        // or you can run docker build -t awais684/camp:${BUILD_NUMBER} (it will keep build versions)
+                    }
+                }
+            }
+        }
+        
+        stage('Trivy Image Scan') {
+            steps {
+                sh "trivy image --format table -o trivy-image-report.html awais684/camp:latest"
+                archiveArtifacts artifacts: 'trivy-image-report.html', fingerprint: true
+            }
+        }
+        
+        stage('Docker Push Image') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker push awais684/camp:latest"
+                    }
+                }
             }
         }
 
+        stage('Deploy to EKS & Verify') {
+    steps {
+        withCredentials([
+            string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+            string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+        ]) {
+            sh "aws eks update-kubeconfig --name cluster-1 --region us-east-1"
+            sh "kubectl apply -f Manifests/dss.yml --validate=false"
+            sh "kubectl get deployment -n webapps"
+            sh "kubectl get pods -n webapps"
+        }
+    }
+}
     }
 
     post {
-
         success {
             mail(
-                to: 'prodteam@yourcompany.com',
-                subject: "✅ Prod Deployment Successful — Build #${env.BUILD_NUMBER}",
+                to: 'awaiszahid684@gmail.com',
+                subject: "✅ CD Pipeline Passed — Build #${env.BUILD_NUMBER} Deployed to EKS",
                 body: """\
 Hi Team,
-
-Production deployment completed successfully.
+The application has been successfully deployed to EKS.
 
 Deployment Details:
 ──────────────────────────────
 Job Name     : ${env.JOB_NAME}
 Build Number : #${env.BUILD_NUMBER}
-Branch       : main
-Build URL    : ${env.BUILD_URL}
-Image        : ${env.IMAGE_NAME}
-Cluster      : ${env.CLUSTER_NAME}
-Region       : ${env.AWS_REGION}
+Docker Image : awais684/camp:${env.BUILD_NUMBER}
+Namespace    : production
+Cluster      : your-eks-cluster-name
 
-✅ EKS deployment is live.
-Please verify the application is running correctly.
-
-Regards,
-Jenkins Automation
                 """.stripIndent()
             )
         }
 
         failure {
             mail(
-                to: 'prodteam@yourcompany.com',
-                subject: "❌ Prod Deployment FAILED — Build #${env.BUILD_NUMBER}",
+                to: 'awaiszahid684@gmail.com',
+                subject: "❌ CD Pipeline FAILED — Build #${env.BUILD_NUMBER}",
                 body: """\
 Hi Team,
-
-Production deployment FAILED. Application may be affected.
+The CD pipeline has FAILED. Deployment to EKS was not completed.
 
 Build Details:
 ──────────────────────────────
 Job Name     : ${env.JOB_NAME}
 Build Number : #${env.BUILD_NUMBER}
+Branch       : ${env.GIT_BRANCH}
 Build URL    : ${env.BUILD_URL}
 
-Immediate Actions:
-──────────────────────────────
-1. Check Build URL above for error details
-2. Run this to rollback to previous version:
-   kubectl rollout undo deployment/camp-deployment
-3. Investigate and fix before re-deploying
-
-Regards,
-Jenkins Automation
                 """.stripIndent()
             )
         }
 
+        always {
+            sh "docker rmi awais684/camp:${BUILD_NUMBER} || true"
+        }
     }
-
 }
