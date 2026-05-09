@@ -16,7 +16,7 @@ This web application allows users to add, view, access, and rate campgrounds by 
 To get this application up and running, you'll need to set up accounts with Cloudinary, Mapbox, and MongoDB Atlas. Once these are set up, create a `.env` file in the same folder as `app.js`. This file should contain the following configurations:
 
 ```sh
-CLOUDINARY_CLOUD_NAME=[Your Cloudinary Cloud Name]
+CLOUDINARY_CLOUD_NAME=[Your Cloudinary Cloud Name] 
 CLOUDINARY_KEY=[Your Cloudinary Key]
 CLOUDINARY_SECRET=[Your Cloudinary Secret]
 MAPBOX_TOKEN=[Your Mapbox Token]
