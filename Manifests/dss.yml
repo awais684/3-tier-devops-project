@@ -1,16 +1,15 @@
 ---
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
-  name: yelp-camp-secrets
-type: Opaque
+  name: yelp-camp-config
 data:
-  CLOUDINARY_CLOUD_NAME: ZG85dnowODY5Cg==
-  CLOUDINARY_KEY: NDc4NjY2OTg1MzM4NTU4Cg==
-  CLOUDINARY_SECRET: c2NITU1TQ1pzbkVKRFR0WTlTY2tGT2Z0a0lzCg==
-  MAPBOX_TOKEN: cGsuZXlKMUlqb2lZWGRoYVhNMk9EUXdJaXdpWVNJNkltTnRiMkY2T0hwaGJ6QmhkM1F5Y0hOb2QzVndNM2wzWjNvaWZRLjR4SmxJdGlnYzBjTFU5RnhRb2JEQWcK
-  DB_URL: bW9uZ29kYitzcnY6Ly9hd2FpczY4NDpQdS55NVlXVGc1V2ZueFFAY2x1c3RlcjEubHZhaGV6Ni5tb25nb2RiLm5ldC8/YXBwTmFtZT1DbHVzdGVyMQo=
-  SECRET: YXdhaXM=
+  CLOUDINARY_CLOUD_NAME: "do9hz0869"
+  CLOUDINARY_KEY: "478666985338558"
+  CLOUDINARY_SECRET: "scHMMSCZsnEJDTTY9SckFOftkIs"
+  MAPBOX_TOKEN: "pk.eyJ1IjoiYXdhaXM2ODQwIiwiYSI6ImNtb2F6OHphbzBhd2QycHNod3VwM3l3Z3oifQ.4xJlItigc0cLU9FxQobDAg"
+  DB_URL: "mongodb+srv://awais684:Pu.y5YWTg5WfnxQ@cluster1.lvahez6.mongodb.net/?appName=Cluster1"
+  SECRET: "awais"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -29,49 +28,27 @@ spec:
       containers:
         - name: yelp-camp-container
           image: awais684/camp:latest
+
           ports:
             - containerPort: 3000
-          env:
-            - name: CLOUDINARY_CLOUD_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: CLOUDINARY_CLOUD_NAME
-            - name: CLOUDINARY_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: CLOUDINARY_KEY
-            - name: CLOUDINARY_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: CLOUDINARY_SECRET
-            - name: MAPBOX_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: MAPBOX_TOKEN
-            - name: DB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: DB_URL
-            - name: SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: yelp-camp-secrets
-                  key: SECRET
+
+          envFrom:
+            - configMapRef:
+                name: yelp-camp-config
+
           livenessProbe:
             httpGet:
               path: /
               port: 3000
-            initialDelaySeconds: 30   # Adjust the initial delay here
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
           readinessProbe:
             httpGet:
               path: /
               port: 3000
-            initialDelaySeconds: 30   # Adjust the initial delay here
+            initialDelaySeconds: 30
+            periodSeconds: 10
 
 ---
 apiVersion: v1
