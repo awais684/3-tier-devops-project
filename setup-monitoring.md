@@ -19,6 +19,12 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 kubectl get pods -n monitoring
 ```
 
+```
+kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
+  -p '{"spec": {"type": "LoadBalancer"}}'
+```
+OR
+
 ## 4. Create Ingress for Grafana & Prometheus
 Create `monitoring-ingress.yml`:
 ```yaml
